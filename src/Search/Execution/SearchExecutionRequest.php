@@ -90,6 +90,14 @@ final class SearchExecutionRequest
 	}
 
 	/**
+	 * @param array<string, mixed> $options
+	 */
+	public function withOptions(array $options): self
+	{
+		return new self($this->search, $this->filter, $this->results, $this->views, $options);
+	}
+
+	/**
 	 * @return array<string, mixed>
 	 */
 	public function toBody(int $defaultViewLimit): array

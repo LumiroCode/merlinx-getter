@@ -68,8 +68,8 @@ final class SearchOperation implements OperationInterface
 
 	public function execute(SearchExecutionRequest $request): SearchExecutionResult
 	{
-		$options = $this->normalizeOptions($request->options());
-		$cacheKey = $this->buildSearchCacheKey($request, $options);
+		$request = $this->normalizeRequest($request);
+		$cacheKey = $this->buildSearchCacheKey($request);
 		$existing = $this->readCacheEnvelope($cacheKey);
 		$now = time();
 
@@ -80,7 +80,7 @@ final class SearchOperation implements OperationInterface
 		$staleCandidate = $this->resolveStaleEnvelope($existing, $now);
 		$refreshLockKey = self::SEARCH_REFRESH_LOCK_PREFIX . $cacheKey;
 
-		$data = $this->lock->withLock($refreshLockKey, function () use ($cacheKey, $request, $options, $staleCandidate): array {
+		$data = $this->lock->withLock($refreshLockKey, function () use ($cacheKey, $request, $staleCandidate): array {
 			$lockedNow = time();
 			$latest = $this->readCacheEnvelope($cacheKey);
 			if ($this->isFresh($latest, $lockedNow)) {
@@ -107,7 +107,6 @@ final class SearchOperation implements OperationInterface
 	}
 
 	/**
-	 * @param array<string, mixed> $options
 	 * @return array<string, mixed>
 	 */
 	private function normalizeOptions(array $options): array
@@ -122,16 +121,18 @@ final class SearchOperation implements OperationInterface
 		return array_merge($this->config->defaultSearchOptions, $normalized);
 	}
 
-	/**
-	 * @param array<string, mixed> $options
-	 */
-	private function buildSearchCacheKey(SearchExecutionRequest $request, array $options): string
+	private function normalizeRequest(SearchExecutionRequest $request): SearchExecutionRequest
+	{
+		return $request->withOptions($this->normalizeOptions($request->options()));
+	}
+
+	private function buildSearchCacheKey(SearchExecutionRequest $request): string
 	{
 		$fingerprint = SearchRequestFingerprint::hash([
 			'schema' => self::SEARCH_CACHE_VERSION,
 			'config' => $this->configFingerprint,
 			'body' => $request->toBody($this->config->defaultViewLimit),
-			'options' => $options,
+			'options' => $request->options(),
 		]);
 
 		return self::SEARCH_CACHE_KEY_PREFIX . $fingerprint;
