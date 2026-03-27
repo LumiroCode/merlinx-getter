@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $autoloadPath = __DIR__ . '/../vendor/autoload.php';
 if (!is_file($autoloadPath)) {
-	throw new RuntimeException('Package dependencies are not installed. Run: cd packages/merlinx-getter && composer install');
+	throw new RuntimeException('Package dependencies are not installed. Run composer install in the package root.');
 }
 
 require $autoloadPath;

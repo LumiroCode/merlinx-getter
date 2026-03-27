@@ -22,7 +22,28 @@ Out of scope for the package search engine:
 ## Installation
 
 ```bash
-cd packages/merlinx-getter
+composer install
+```
+
+To install this package from another local project via a Composer path repository:
+
+```json
+{
+	"repositories": [
+		{
+			"type": "path",
+			"url": "../merlinx-getter"
+		}
+	],
+	"require": {
+		"skionline/merlinx-getter": "*@dev"
+	}
+}
+```
+
+Then run:
+
+```bash
 composer install
 ```
 
