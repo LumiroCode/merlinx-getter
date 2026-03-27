@@ -2,8 +2,36 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Generate agents session id",
-			"command": ".github/skills/session-id-generator/scripts/generate_session_id.sh",
+			"label": "Run core tests",
+			"type": "shell",
+			"command": "cd /home/projekty/projects/skionline && bash tests/run_all.sh",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": [],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Run core tests with integration",
+			"type": "shell",
+			"command": "RUN_INTEGRATION_TESTS=1 cd /home/projekty/projects/skionline && bash tests/run_all.sh",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": [],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Generate agents conversation id",
+			"command": ".github/skills/conversation-id-generator/scripts/generate_conversation_id.sh",
 			"type": "shell",
 			"presentation": {
 				"reveal": "always"
