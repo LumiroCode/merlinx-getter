@@ -184,12 +184,29 @@ final class ConfiguredResponseValueExcluder
 
 		foreach ($this->excludedValuesByPathCanonicalMap as $path => $forbiddenCanonicalMap) {
 			$value = $this->valueAtPath($item, $path);
+			if ($this->isExcludedPathValueUndefined($value)) {
+				continue;
+			}
+
 			if ($this->matchesForbiddenCanonical($value, $forbiddenCanonicalMap)) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	private function isExcludedPathValueUndefined(mixed $value): bool
+	{
+		if ($value === null) {
+			return true;
+		}
+
+		if (is_string($value)) {
+			return trim($value) === '';
+		}
+
+		return is_array($value) && $value === [];
 	}
 
 	private function valueAtPath(mixed $source, string $path): mixed
