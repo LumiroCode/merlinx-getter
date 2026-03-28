@@ -4,7 +4,7 @@
 		{
 			"label": "Run core tests",
 			"type": "shell",
-			"command": "cd /home/projekty/projects/skionline && bash tests/run_all.sh",
+			"command": "cd /home/projekty/projects/merlinx-getter && bash tests/run_all.sh",
 			"presentation": {
 				"reveal": "always",
 				"panel": "shared"
@@ -18,7 +18,7 @@
 		{
 			"label": "Run core tests with integration",
 			"type": "shell",
-			"command": "RUN_INTEGRATION_TESTS=1 cd /home/projekty/projects/skionline && bash tests/run_all.sh",
+			"command": "RUN_INTEGRATION_TESTS=1 cd /home/projekty/projects/merlinx-getter && bash tests/run_all.sh",
 			"presentation": {
 				"reveal": "always",
 				"panel": "shared"
