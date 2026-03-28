@@ -202,6 +202,9 @@ final class TravelSearchResponseMerger
 		}
 
 		$normalized = [];
+		$missingOfferIdCount = 0;
+		$sampleItemKeys = [];
+		$sampleItemKeyFingerprints = [];
 		foreach ($rawItems as $item) {
 			if (!is_array($item)) {
 				continue;
@@ -209,9 +212,17 @@ final class TravelSearchResponseMerger
 
 			$offerId = $this->extractOfferId($item);
 			if ($offerId === '') {
-				$this->emitWarning('offer_list_item_missing_offer_id', [
-					'item_keys' => array_keys($item),
-				]);
+				$missingOfferIdCount++;
+				$itemKeys = array_map(static fn ($key): string => (string) $key, array_keys($item));
+				$fingerprint = implode('|', $itemKeys);
+				if (
+					$fingerprint !== ''
+					&& !isset($sampleItemKeyFingerprints[$fingerprint])
+					&& count($sampleItemKeys) < 3
+				) {
+					$sampleItemKeyFingerprints[$fingerprint] = true;
+					$sampleItemKeys[] = $itemKeys;
+				}
 				continue;
 			}
 
@@ -221,6 +232,13 @@ final class TravelSearchResponseMerger
 			}
 
 			$normalized[$offerId] = $this->mergeEntityPreferFirst($normalized[$offerId], $item);
+		}
+
+		if ($missingOfferIdCount > 0) {
+			$this->emitWarning('offer_list_item_missing_offer_id', [
+				'missing_count' => $missingOfferIdCount,
+				'sample_item_keys' => $sampleItemKeys,
+			]);
 		}
 
 		return $normalized;
