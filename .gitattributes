@@ -1,0 +1,9 @@
+# Keep release archives focused on runtime package files.
+/docs export-ignore
+/tests export-ignore
+/.github export-ignore
+/.vscode export-ignore
+/.codex export-ignore
+/integration-test.php export-ignore
+/decisionlog.md export-ignore
+/TODO.md export-ignore

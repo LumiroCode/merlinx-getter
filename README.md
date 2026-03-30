@@ -50,6 +50,7 @@ composer install
 ## Release
 
 The repository includes a strict tag-driven release script at `./release`.
+It builds runtime-only release artifacts before tagging.
 
 Release rules:
 
@@ -59,12 +60,15 @@ Release rules:
 - tests (`composer test`) must pass
 - generated tags are canonical `vX.Y.Z`
 - historical tags in both `vX.Y.Z` and `X.Y.Z` are parsed when computing latest version
+- release bundle is built from an explicit allowlist (`composer.json`, `composer.lock`, `README.md`, `src/`)
+- release artifacts are written to `dist/` as `merlinx-getter-X.Y.Z.tar.gz`
 - only the new tag is pushed (no branch push)
+- release archive scope is validated from that allowlist (so folders like `docs/` are never bundled)
 
 Usage:
 
 ```bash
-# preview next patch release, run full checks, do not tag/push
+# preview next patch release, run full checks, do not build/tag/push
 ./release --bump patch --dry-run
 
 # release next minor version from latest existing tag
@@ -81,6 +85,7 @@ Common failure cases:
 - out-of-sync branch: pull/rebase/push until `HEAD == origin/main`
 - failing tests: fix test failures before retry
 - invalid/existing target tag: choose a valid, unused semver version
+- archive scope failure: adjust `RELEASE_INCLUDE_PATHS` in `./release`
 
 ## Public API
 

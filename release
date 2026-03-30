@@ -9,6 +9,15 @@ readonly EXIT_PRECHECK=4
 readonly EXIT_TESTS=5
 readonly EXIT_VERSION=6
 readonly EXIT_TAG=7
+readonly EXIT_PACKAGE=8
+readonly RELEASE_DIST_DIR="dist"
+readonly RELEASE_PACKAGE_NAME="merlinx-getter"
+readonly -a RELEASE_INCLUDE_PATHS=(
+    "composer.json"
+    "composer.lock"
+    "README.md"
+    "src"
+)
 
 usage() {
     cat <<EOF
@@ -19,12 +28,13 @@ Usage:
 
 Description:
   Performs strict preflight checks, computes a canonical tag (vX.Y.Z),
-  creates an annotated git tag, and pushes only that tag to origin.
+  builds a runtime-only release bundle, creates an annotated git tag,
+  and pushes only that tag to origin.
 
 Options:
   --bump <patch|minor|major>  Bump from latest existing semver tag.
   --version <X.Y.Z>           Release an explicit semver version.
-  --dry-run                   Run all checks and print outcome without tagging/pushing.
+  --dry-run                   Run all checks and print outcome without building/tagging/pushing.
   -h, --help                  Show this help and exit.
 EOF
 }
@@ -175,6 +185,33 @@ run_tests() {
     fi
 }
 
+release_archive_list() {
+    git archive --format=tar --worktree-attributes HEAD "${RELEASE_INCLUDE_PATHS[@]}" | tar -tf -
+}
+
+assert_release_archive_scope() {
+    log "Validating release archive scope..."
+
+    local archive_list entry
+    archive_list="$(release_archive_list)"
+
+    while IFS= read -r entry; do
+        case "$entry" in
+            docs/*|tests/*|.github/*|.vscode/*|.codex/*|integration-test.php|TODO.md|decisionlog.md)
+                die "$EXIT_PACKAGE" "Release archive contains non-release entry '$entry'. Update RELEASE_INCLUDE_PATHS."
+                ;;
+        esac
+    done <<< "$archive_list"
+
+    if ! grep -Fqx "composer.json" <<<"$archive_list"; then
+        die "$EXIT_PACKAGE" "Release archive does not contain composer.json."
+    fi
+
+    if ! grep -Fq "src/" <<<"$archive_list"; then
+        die "$EXIT_PACKAGE" "Release archive does not contain src/."
+    fi
+}
+
 assert_tag_available() {
     local tag="$1"
 
@@ -185,6 +222,22 @@ assert_tag_available() {
     if git ls-remote --tags --refs origin "$tag" | grep -q .; then
         die "$EXIT_TAG" "Tag '$tag' already exists on origin."
     fi
+}
+
+build_release_artifacts() {
+    local semver="$1"
+    local artifact_name="${RELEASE_PACKAGE_NAME}-${semver}"
+    local prefix="${artifact_name}/"
+    local tar_path="${RELEASE_DIST_DIR}/${artifact_name}.tar"
+    local tgz_path="${tar_path}.gz"
+
+    mkdir -p "$RELEASE_DIST_DIR"
+
+    log "Building release artifact: $tgz_path"
+    git archive --format=tar --prefix="$prefix" --worktree-attributes HEAD "${RELEASE_INCLUDE_PATHS[@]}" > "$tar_path"
+    gzip -f "$tar_path"
+
+    log "Release artifact ready: $tgz_path"
 }
 
 create_and_push_tag() {
@@ -205,6 +258,8 @@ main() {
 
     require_command git
     require_command composer
+    require_command tar
+    require_command gzip
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -251,6 +306,7 @@ main() {
     fetch_origin_with_tags
     assert_synced_with_origin_main
     run_tests
+    assert_release_archive_scope
 
     local latest_semver target_semver target_tag
     latest_semver="$(get_latest_semver)"
@@ -271,9 +327,12 @@ main() {
         log "Dry run successful."
         log "Latest version: $latest_semver"
         log "Next tag: $target_tag"
+        log "Bundle scope: ${RELEASE_INCLUDE_PATHS[*]}"
+        log "Artifact path (on real run): ${RELEASE_DIST_DIR}/${RELEASE_PACKAGE_NAME}-${target_semver}.tar.gz"
         exit 0
     fi
 
+    build_release_artifacts "$target_semver"
     create_and_push_tag "$target_tag"
     log "Release complete: $target_tag"
 }
