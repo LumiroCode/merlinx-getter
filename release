@@ -55,6 +55,23 @@ require_command() {
     command -v "$cmd" >/dev/null 2>&1 || die "$EXIT_DEPENDENCY" "Required command '$cmd' not found."
 }
 
+rewrite_composer_json_version() {
+    local composer_json_path="$1"
+    local semver="$2"
+
+    php -r '
+$path = $argv[1];
+$version = $argv[2];
+$raw = file_get_contents($path);
+if ($raw === false) { fwrite(STDERR, "Could not read composer.json\n"); exit(1); }
+$data = json_decode($raw, true);
+if (!is_array($data)) { fwrite(STDERR, "Invalid composer.json (not an object)\n"); exit(1); }
+$data["version"] = $version;
+$encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+if (file_put_contents($path, $encoded) === false) { fwrite(STDERR, "Could not write composer.json\n"); exit(1); }
+' "$composer_json_path" "$semver"
+}
+
 is_valid_semver() {
     local version="$1"
     [[ "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]
@@ -227,14 +244,21 @@ assert_tag_available() {
 build_release_artifacts() {
     local semver="$1"
     local artifact_name="${RELEASE_PACKAGE_NAME}-${semver}"
-    local prefix="${artifact_name}/"
     local tar_path="${RELEASE_DIST_DIR}/${artifact_name}.tar"
     local tgz_path="${tar_path}.gz"
+    local tmp_dir=""
 
     mkdir -p "$RELEASE_DIST_DIR"
 
     log "Building release artifact: $tgz_path"
-    git archive --format=tar --prefix="$prefix" --worktree-attributes HEAD "${RELEASE_INCLUDE_PATHS[@]}" > "$tar_path"
+    tmp_dir="$(mktemp -d "${RELEASE_DIST_DIR}/.tmp.${artifact_name}.XXXXXX")"
+    trap 'rm -rf "$tmp_dir"' EXIT
+
+    # Composer's artifact repository needs a version, but we do not want it in the repo's composer.json.
+    git archive --format=tar --prefix="${artifact_name}/" --worktree-attributes HEAD "${RELEASE_INCLUDE_PATHS[@]}" | tar -xf - -C "$tmp_dir"
+    rewrite_composer_json_version "${tmp_dir}/${artifact_name}/composer.json" "$semver"
+
+    tar -cf "$tar_path" -C "$tmp_dir" "$artifact_name"
     gzip -f "$tar_path"
 
     log "Release artifact ready: $tgz_path"
@@ -258,6 +282,7 @@ main() {
 
     require_command git
     require_command composer
+    require_command php
     require_command tar
     require_command gzip
 

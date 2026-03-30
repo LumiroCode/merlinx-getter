@@ -62,6 +62,7 @@ Release rules:
 - historical tags in both `vX.Y.Z` and `X.Y.Z` are parsed when computing latest version
 - release bundle is built from an explicit allowlist (`composer.json`, `composer.lock`, `README.md`, `src/`)
 - release artifacts are written to `dist/` as `merlinx-getter-X.Y.Z.tar.gz`
+- the artifact contains `composer.json` with an injected `"version": "X.Y.Z"` to support Composer `artifact` repositories
 - only the new tag is pushed (no branch push)
 - release archive scope is validated from that allowlist (so folders like `docs/` are never bundled)
 
