@@ -4,6 +4,16 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_root="$(cd "$script_dir/.." && pwd)"
 tests_dir="$project_root/tests"
 
+show_pass=false
+show_skip=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --show-pass|--show-success) show_pass=true ;;
+        --show-skip) show_skip=true ;;
+    esac
+done
+
 echo "Tests suite start at $(date)"
 
 failed=0
@@ -14,8 +24,6 @@ failed_files=()
 shopt -s nullglob
 
 for f in "$tests_dir"/*.php; do
-    echo "---- $f"
-
     # Explicitly lint the file first so syntax errors are always counted as failures.
     # (Some environments can emit parse/syntax output while still returning exit code 0
     # for the execution step; linting makes this deterministic.)
@@ -23,6 +31,7 @@ for f in "$tests_dir"/*.php; do
     php -d display_errors=1 -l "$f" >"$lint_tmp" 2>&1
     lint_status=$?
     if [ "$lint_status" -ne 0 ]; then
+        echo "---- $f"
         echo "FAILED (syntax): $f"
         cat "$lint_tmp"
         failed=$((failed+1))
@@ -43,6 +52,7 @@ for f in "$tests_dir"/*.php; do
 
     # Require explicit PASS or SKIP output; otherwise treat as failure even with exit code 0.
     if [ "$status" -eq 0 ] && ! grep -Eq 'PASS|SKIP' "$tmp"; then
+        echo "---- $f"
         echo "FAILED: $f"
         echo "test suite did not emit any PASS/SKIP status"
         cat "$tmp"
@@ -53,9 +63,19 @@ for f in "$tests_dir"/*.php; do
     fi
 
     if [ "$status" -eq 0 ]; then
-        cat "$tmp"
+        if grep -q 'PASS' "$tmp"; then
+            result_class="pass"
+        else
+            result_class="skip"
+        fi
+
+        if { [ "$result_class" = "pass" ] && $show_pass; } || { [ "$result_class" = "skip" ] && $show_skip; }; then
+            echo "---- $f"
+            cat "$tmp"
+        fi
         passed=$((passed+1))
     else
+        echo "---- $f"
         echo "FAILED: $f"
         # Hide misleading PASS lines that may have been printed before the crash.
         grep -vE '^[[:space:]]*PASS:' "$tmp" || true
