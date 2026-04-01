@@ -61,7 +61,22 @@ final class MerlinxHttpClient
 		if ($this->isAuthError($response->statusCode(), $response->body())) {
 			$freshToken = $this->tokenProvider->forceRefresh();
 			$optionsWithNewToken = $this->withAuthHeaders($options, $freshToken);
-			return $this->sendWithRetry($method, $url, $optionsWithNewToken, $policy, $queryFingerprint);
+			$retried = $this->sendWithRetry($method, $url, $optionsWithNewToken, $policy, $queryFingerprint);
+			if ($this->isAuthError($retried->statusCode(), $retried->body())) {
+				throw new HttpRequestException(
+					$this->errorReporter->buildMessage(
+						'MerlinX HTTP request failed with status ' . $retried->statusCode() . ' (auth error persisted after token refresh)',
+						$method,
+						$this->endpointForErrorMessage($url),
+						responseBody: $retried->body(),
+						requestSnippet: $this->resolveRequestSnippet($options),
+						queryFingerprint: $queryFingerprint,
+					),
+					$retried->statusCode(),
+					$retried->body()
+				);
+			}
+			return $retried;
 		}
 
 		return $response;
@@ -182,6 +197,10 @@ final class MerlinxHttpClient
 			}
 
 			if ($status >= 400) {
+				if ($this->isAuthError($status, $body)) {
+					return new HttpResponse($status, $headers, $body, $attempt + 1);
+				}
+
 				$errorType = $status >= 500 ? 'server error' : 'client error';
 				throw new HttpRequestException(
 					$this->errorReporter->buildMessage(
