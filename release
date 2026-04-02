@@ -15,6 +15,7 @@ readonly RELEASE_PACKAGE_NAME="merlinx-getter"
 readonly -a RELEASE_INCLUDE_PATHS=(
     "composer.json"
     "composer.lock"
+    "LICENSE"
     "README.md"
     "src"
 )

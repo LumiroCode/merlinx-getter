@@ -47,6 +47,13 @@ Then run:
 composer install
 ```
 
+## License
+
+This package is proprietary software owned by SkiOnline.pl.
+
+- Copyright (c) SkiOnline.pl. All rights reserved.
+- See `LICENSE` for the full terms.
+
 ## Release
 
 The repository includes a strict tag-driven release script at `./release`.
@@ -60,7 +67,7 @@ Release rules:
 - tests (`composer test`) must pass
 - generated tags are canonical `vX.Y.Z`
 - historical tags in both `vX.Y.Z` and `X.Y.Z` are parsed when computing latest version
-- release bundle is built from an explicit allowlist (`composer.json`, `composer.lock`, `README.md`, `src/`)
+- release bundle is built from an explicit allowlist (`composer.json`, `composer.lock`, `LICENSE`, `README.md`, `src/`)
 - release artifacts are written to `dist/` as `merlinx-getter-X.Y.Z.tar.gz`
 - the artifact contains `composer.json` with an injected `"version": "X.Y.Z"` to support Composer `artifact` repositories
 - only the new tag is pushed (no branch push)
