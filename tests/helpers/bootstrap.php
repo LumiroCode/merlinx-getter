@@ -150,7 +150,6 @@ function baseMerlinxConfig(array $overrides = []): array
 		'type' => 'web',
 		'language' => 'pl',
 		'search_engine' => [
-			'name' => 'test-profile',
 			'operators' => ['SNOW'],
 			'conditions' => [
 				[
