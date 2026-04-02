@@ -243,6 +243,51 @@ if ($portal['limitHit']) {
 
 ## Search Config
 
+### Configuration Methods
+
+The most significant recent enhancement is the **`search_engine` configuration** — a powerful way to define and enforce canonical search behavior across your application.
+
+There are two main ways to configure `MerlinxGetterClient`:
+
+#### 1. From Root Config (Recommended for Most Projects)
+
+Use `MerlinxGetterConfig::fromRootConfig()` when you have a unified application configuration file (e.g., `config.php` in your project root). This method expects the full configuration array and automatically extracts MerlinX settings:
+
+```php
+$config = require __DIR__ . '/config.php'; // Your project's unified config
+
+$client = new MerlinxGetterClient(
+    MerlinxGetterConfig::fromRootConfig($config)
+);
+```
+
+**Benefits:**
+- Single source of truth for all configuration
+- Easy to manage environment-specific settings
+- Automatically handles default values
+
+#### 2. From Array (For Advanced Control)
+
+Use `MerlinxGetterConfig::fromArray()` when you need fine-grained control over MerlinX-specific settings:
+
+```php
+$config = [
+    'system' => [ /* ... */ ],
+    'merlinx' => [ /* ... */ ],
+];
+
+$client = new MerlinxGetterClient(
+    MerlinxGetterConfig::fromArray($config['merlinx'])
+);
+```
+
+**Benefits:**
+- Explicit control over each configuration parameter
+- Useful for specialized use cases or testing
+- Minimal configuration footprint
+
+---
+
 Canonical search config lives under `search_engine`.
 
 Application-owned helper/read-model caches must live under `merlinx.helper_cache`; they are not part of the package contract.

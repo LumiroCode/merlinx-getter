@@ -9,6 +9,7 @@ use Skionline\MerlinxGetter\Search\Profile\SearchEngineProfile;
 
 final class MerlinxGetterConfig
 {
+	private const DEFAULT_API_BASE_URL = 'https://mwsv5pro.merlinx.eu';
 	private const DEFAULT_CACHE_TOKEN_TTL_SECONDS = 30;
 	private const DEFAULT_CACHE_SEARCH_TTL_SECONDS = 300;
 	private const DEFAULT_CACHE_SEARCH_STALE_SECONDS = 900;
@@ -70,12 +71,12 @@ final class MerlinxGetterConfig
 			throw new ConfigException('MerlinX search_engine config is required.');
 		}
 
-		$baseUrl = self::requiredString($merlinx, ['baseUrl', 'base_url'], 'MerlinX base URL is required.');
 		$login = self::requiredString($merlinx, ['login'], 'MerlinX login is required.');
 		$password = self::requiredString($merlinx, ['password'], 'MerlinX password is required.');
 		$expedient = self::requiredString($merlinx, ['expedient'], 'MerlinX expedient is required.');
 		$domain = self::requiredString($merlinx, ['domain'], 'MerlinX domain is required.');
-
+		
+		$baseUrl = self::optionalString($merlinx, ['baseUrl'], self::DEFAULT_API_BASE_URL);
 		$source = self::optionalString($merlinx, ['source'], 'B2C');
 		$type = self::optionalString($merlinx, ['type'], 'web');
 		$language = self::optionalString($merlinx, ['language'], 'pl');
