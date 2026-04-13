@@ -18,6 +18,8 @@ use Skionline\MerlinxGetter\Log\LoggerInterface;
 use Skionline\MerlinxGetter\Operation\GetDetailsOperation;
 use Skionline\MerlinxGetter\Operation\GetLiveAvailabilityOperation;
 use Skionline\MerlinxGetter\Operation\PortalSearchOperation;
+use Skionline\MerlinxGetter\Operation\RawTravelSearchOperation;
+use Skionline\MerlinxGetter\Operation\SearchBaseOperation;
 use Skionline\MerlinxGetter\Operation\SearchOperation;
 use Skionline\MerlinxGetter\Search\Execution\SearchExecutionRequest;
 use Skionline\MerlinxGetter\Search\Execution\SearchExecutionResult;
@@ -48,7 +50,7 @@ final class MerlinxGetterClient
 		$this->config = $config;
 		$this->searchProfile = $config->searchProfile();
 
-		[$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $lockDir] = $this->buildCacheStores($cache);
+		[$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $searchBaseCache, $lockDir] = $this->buildCacheStores($cache);
 		$lock = new FileKeyLock(
 			$lockDir,
 			$this->config->cacheSearchLockTimeoutMs,
@@ -67,6 +69,8 @@ final class MerlinxGetterClient
 
 		$this->registerOperation($searchOperation);
 		$this->registerOperation(new GetDetailsOperation($this->config, $merlinxClient, $detailsCache, $lock));
+		$this->registerOperation(new SearchBaseOperation($this->config, $merlinxClient, $searchBaseCache, $lock));
+		$this->registerOperation(new RawTravelSearchOperation($merlinxClient));
 		$this->registerOperation(new GetLiveAvailabilityOperation(
 			$merlinxClient,
 			$this->config,
@@ -123,6 +127,47 @@ final class MerlinxGetterClient
 	/**
 	 * @return array<string, mixed>
 	 */
+	public function getDetailsFresh(string $offerId): array
+	{
+		/** @var GetDetailsOperation $operation */
+		$operation = $this->operation('getDetails', GetDetailsOperation::class);
+		return $operation->executeFresh($offerId);
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 */
+	public function putDetails(string $offerId, array $payload): bool
+	{
+		/** @var GetDetailsOperation $operation */
+		$operation = $this->operation('getDetails', GetDetailsOperation::class);
+		return $operation->put($offerId, $payload);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function getSearchBase(bool $force = false): array
+	{
+		/** @var SearchBaseOperation $operation */
+		$operation = $this->operation('searchBase', SearchBaseOperation::class);
+		return $operation->execute($force);
+	}
+
+	/**
+	 * @param array<string, mixed> $body
+	 * @return array<string, mixed>
+	 */
+	public function executeRawSearch(array $body): array
+	{
+		/** @var RawTravelSearchOperation $operation */
+		$operation = $this->operation('rawTravelSearch', RawTravelSearchOperation::class);
+		return $operation->execute($body);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
 	public function getLiveAvailability(string $offerId, ?string $action = 'checkstatus', bool $includeTfg = true, bool $force = false): array
 	{
 		/** @var GetLiveAvailabilityOperation $operation */
@@ -162,7 +207,7 @@ final class MerlinxGetterClient
 	}
 
 	/**
-	 * @return array{0:CacheInterface,1:CacheInterface,2:CacheInterface,3:CacheInterface,4:string}
+	 * @return array{0:CacheInterface,1:CacheInterface,2:CacheInterface,3:CacheInterface,4:CacheInterface,5:string}
 	 */
 	private function buildCacheStores(?CacheInterface $cache): array
 	{
@@ -171,10 +216,11 @@ final class MerlinxGetterClient
 			$searchCache = new NamespacedCache($cache, 'merlinx_getter.search.v2');
 			$detailsCache = new NamespacedCache($cache, 'merlinx_getter.details.v1');
 			$liveAvailabilityCache = new NamespacedCache($cache, 'merlinx_getter.live_availability.v1');
-			$this->managedCaches = [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache];
+			$searchBaseCache = new NamespacedCache($cache, 'merlinx_getter.search_base.v1');
+			$this->managedCaches = [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $searchBaseCache];
 
 			$lockDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'merlinx-getter-locks';
-			return [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $lockDir];
+			return [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $searchBaseCache, $lockDir];
 		}
 
 		$factory = new FilesystemCacheFactory($this->config->cacheDir);
@@ -182,9 +228,10 @@ final class MerlinxGetterClient
 		$searchCache = $factory->create('merlinx_getter.search.v2');
 		$detailsCache = $factory->create('merlinx_getter.details.v1');
 		$liveAvailabilityCache = $factory->create('merlinx_getter.live_availability.v1');
-		$this->managedCaches = [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache];
+		$searchBaseCache = $factory->create('merlinx_getter.search_base.v1');
+		$this->managedCaches = [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $searchBaseCache];
 
 		$lockDir = rtrim($this->config->cacheDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'locks';
-		return [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $lockDir];
+		return [$tokenCache, $searchCache, $detailsCache, $liveAvailabilityCache, $searchBaseCache, $lockDir];
 	}
 }

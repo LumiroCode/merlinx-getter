@@ -193,6 +193,59 @@ try {
 	assertSameValue(3, $searchRequestCount6, 'Test 6: search called 3 times (rate-limited + auth-error + auth-recovery replay).');
 	assertSameValue(1, $tokenRequestCount6, 'Test 6: forceRefresh triggered one token HTTP request (initial getToken uses persistent cache).');
 
+	// -----------------------------------------------------------------------------
+	// Test 7: 401 → forceRefresh triggered → replay succeeds
+	// -----------------------------------------------------------------------------
+	$tokenRequestCount7 = 0;
+	$searchBaseRequestCount7 = 0;
+	[$client7] = $buildClient(static function (string $method, string $url, array $options = []) use (&$tokenRequestCount7, &$searchBaseRequestCount7): MockResponse {
+		if (str_contains($url, '/v5/token/new')) {
+			$tokenRequestCount7++;
+			return new MockResponse(json_encode(['token' => 'token-' . $tokenRequestCount7], JSON_THROW_ON_ERROR), ['http_code' => 200]);
+		}
+		if (str_contains($url, '/v5/data/travel/searchbase')) {
+			$searchBaseRequestCount7++;
+			if ($searchBaseRequestCount7 === 1) {
+				return new MockResponse(json_encode(['status' => 'ERROR', 'error' => ['text' => 'Unauthorized']], JSON_THROW_ON_ERROR), ['http_code' => 401]);
+			}
+			return new MockResponse(json_encode(['Status' => ['code' => 'OK'], 'Sections' => []], JSON_THROW_ON_ERROR), ['http_code' => 200]);
+		}
+		return new MockResponse('unexpected', ['http_code' => 500]);
+	});
+
+	$response7 = $client7->request('GET', '/v5/data/travel/searchbase', ['headers' => ['Accept' => 'application/json']]);
+
+	assertSameValue(200, $response7->statusCode(), 'Test 7: 401 should be auth-recovered to 200.');
+	assertSameValue(2, $searchBaseRequestCount7, 'Test 7: searchbase should be called twice (initial + replay).');
+	assertSameValue(1, $tokenRequestCount7, 'Test 7: 401 should force one token fetch when initial getToken reuses persistent cache.');
+
+	// -----------------------------------------------------------------------------
+	// Test 8: semantic TOKEN CORRUPTED body → forceRefresh triggered → replay succeeds
+	// -----------------------------------------------------------------------------
+	$tokenRequestCount8 = 0;
+	$searchBaseRequestCount8 = 0;
+	[$client8] = $buildClient(static function (string $method, string $url, array $options = []) use (&$tokenRequestCount8, &$searchBaseRequestCount8): MockResponse {
+		if (str_contains($url, '/v5/token/new')) {
+			$tokenRequestCount8++;
+			return new MockResponse(json_encode(['token' => 'token-' . $tokenRequestCount8], JSON_THROW_ON_ERROR), ['http_code' => 200]);
+		}
+		if (str_contains($url, '/v5/data/travel/searchbase')) {
+			$searchBaseRequestCount8++;
+			if ($searchBaseRequestCount8 === 1) {
+				return new MockResponse(json_encode(['status' => 'ERROR', 'error' => ['text' => 'TOKEN CORRUPTED']], JSON_THROW_ON_ERROR), ['http_code' => 200]);
+			}
+			return new MockResponse(json_encode(['Status' => ['code' => 'OK'], 'Sections' => []], JSON_THROW_ON_ERROR), ['http_code' => 200]);
+		}
+		return new MockResponse('unexpected', ['http_code' => 500]);
+	});
+
+	$response8 = $client8->request('GET', '/v5/data/travel/searchbase', ['headers' => ['Accept' => 'application/json']]);
+	$data8 = json_decode($response8->body(), true, 512, JSON_THROW_ON_ERROR);
+
+	assertSameValue(['code' => 'OK'], $data8['Status'] ?? null, 'Test 8: semantic auth recovery should return replay payload.');
+	assertSameValue(2, $searchBaseRequestCount8, 'Test 8: searchbase should be called twice (initial + replay).');
+	assertSameValue(1, $tokenRequestCount8, 'Test 8: TOKEN CORRUPTED should force one token fetch when initial getToken reuses persistent cache.');
+
 	echo "PASS: MerlinxHttpClient auth recovery path works correctly.\n";
 	exit(0);
 } catch (Throwable $e) {

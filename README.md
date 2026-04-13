@@ -8,13 +8,13 @@ Its search scope is intentionally narrow: typed search request in, canonical `se
 
 - `POST /v5/token/new`
 - `POST /v5/data/travel/search`
+- `POST /v5/data/travel/searchbase`
 - `GET /v5/data/travel/details`
 - `POST /v5/data/travel/checkonline`
 - `POST https://www.skionline.pl/wxp/?p=ofertyResultsJson`
 
 Out of scope for the package search engine:
 
-- `/searchbase`
 - query normalization outside the search request payload
 - promoted-offer matching
 - presentation formatting
@@ -102,7 +102,11 @@ Entry point: `Skionline\MerlinxGetter\MerlinxGetterClient`
 Methods:
 
 - `executeSearch(SearchExecutionRequest $request): SearchExecutionResult`
+- `executeRawSearch(array $body): array`
+- `getSearchBase(bool $force = false): array`
 - `getDetails(string $offerId): array`
+- `getDetailsFresh(string $offerId): array`
+- `putDetails(string $offerId, array $payload): bool`
 - `getLiveAvailability(string $offerId, ?string $action = 'checkstatus', bool $includeTfg = true, bool $force = false): array`
 - `portalSearch(array $params = []): array`
 - `clearCache(): bool`
@@ -323,6 +327,8 @@ Search-engine keys:
 - `cache.search.stale_seconds`
 - `cache.search.lock_timeout_ms`
 - `cache.search.lock_retry_delay_ms`
+- `cache.search_base.ttl_seconds`
+- `cache.search_base.stale_seconds`
 
 Defaults when omitted:
 
@@ -340,6 +346,8 @@ Defaults when omitted:
 - `search_engine.runtime.rate_limit_retry_max_delay_ms`: `8000`
 - `search_engine.cache.search.ttl_seconds`: `300`
 - `search_engine.cache.search.stale_seconds`: `900`
+- `search_engine.cache.search_base.ttl_seconds`: same as `search_engine.cache.search.ttl_seconds`
+- `search_engine.cache.search_base.stale_seconds`: same as `search_engine.cache.search.stale_seconds`
 - `search_engine.cache.search.lock_timeout_ms`: `3000`
 - `search_engine.cache.search.lock_retry_delay_ms`: `50`
 - `merlinx.cache.live_availability.ttl`: `30`
@@ -375,7 +383,7 @@ The package search engine owns:
 - empty-page stop guard (`empty(items)`)
 - soft limit stop when merged item count reaches the explicitly requested view limit
 - shared MerlinX HTTP rate-limit retry/backoff across search, details, checkonline, and token acquisition
-- automatic auth recovery on stale token: a 412 `autherror` response triggers a forced token refresh and a single request replay; if the replayed request also returns an auth error, `HttpRequestException` is thrown
+- automatic auth recovery on stale token: a 412 `autherror`, HTTP 401, or MerlinX token-corruption response triggers a forced token refresh and a single request replay; if the replayed request also returns an auth error, `HttpRequestException` is thrown
 - `fieldValues` normalization and merge
 - enforced `Accommodation.Attributes` pruning derived from `search_engine.conditions`
 - configured path-based exclusions (`response_filters.exclude_values_by_path`) applied on each fetched page before merge
@@ -412,6 +420,23 @@ View-specific merge rules:
 - caches fresh and stale responses
 - uses alias-aware cache keys derived from composite `OfferId`
 - bypasses cache when the `OfferId` cannot be normalized safely
+
+`getDetailsFresh()` bypasses details cache for the read and updates the cache when the `OfferId` can be normalized.
+
+`putDetails()` overwrites a normalized details cache entry with a caller-provided `result.offer` payload and returns `false` when the `OfferId` cannot be normalized.
+
+`getSearchBase()`:
+
+- calls `/v5/data/travel/searchbase`
+- caches only payloads with top-level `Status` and `Sections` arrays
+- rejects semantic MerlinX error payloads instead of caching them
+- serves the last valid stale payload when refresh fails and stale cache is still available
+
+`executeRawSearch()`:
+
+- calls `/v5/data/travel/search` with the exact caller-provided body
+- skips search-engine condition merging and persistent search cache
+- still uses package auth recovery, rate-limit retry, and debug-field sanitization
 
 `getLiveAvailability()`:
 

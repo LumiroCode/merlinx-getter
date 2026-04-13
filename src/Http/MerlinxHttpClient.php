@@ -302,8 +302,12 @@ final class MerlinxHttpClient
 		if ($statusCode === 412) {
 			return true;
 		}
+		if ($statusCode === 401) {
+			return true;
+		}
 
-		return stripos($body, 'autherror') !== false;
+		return stripos($body, 'autherror') !== false
+			|| stripos($body, 'TOKEN CORRUPTED') !== false;
 	}
 
 	private function removeDebugField(string $body): string

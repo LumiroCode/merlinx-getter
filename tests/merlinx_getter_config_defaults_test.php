@@ -40,6 +40,8 @@ try {
 	assertSameValue(1800, $config->cacheTokenTtlSeconds, 'cache.token.ttlSeconds mapping mismatch.');
 	assertSameValue(300, $config->cacheSearchTtlSeconds, 'Default search ttl mismatch.');
 	assertSameValue(900, $config->cacheSearchStaleSeconds, 'Default search stale ttl mismatch.');
+	assertSameValue(300, $config->cacheSearchBaseTtlSeconds, 'Default searchBase ttl mismatch.');
+	assertSameValue(900, $config->cacheSearchBaseStaleSeconds, 'Default searchBase stale ttl mismatch.');
 	assertSameValue(45, $config->cacheLiveAvailabilityTtlSeconds, 'cache.liveAvailability.ttlSeconds mapping mismatch.');
 	assertSameValue(3000, $config->cacheSearchLockTimeoutMs, 'Default cache.search.lockTimeoutMs mismatch.');
 	assertSameValue(50, $config->cacheSearchLockRetryDelayMs, 'Default cache.search.lockRetryDelayMs mismatch.');
@@ -83,6 +85,10 @@ try {
 					'lock_timeout_ms' => 900,
 					'lock_retry_delay_ms' => 15,
 				],
+				'search_base' => [
+					'ttl_seconds' => 180,
+					'stale_seconds' => 360,
+				],
 			],
 		],
 		'cache' => [
@@ -109,6 +115,8 @@ try {
 	assertSameValue(1200, $overrideConfig->cacheTokenTtlSeconds, 'Explicit token ttl override mismatch.');
 	assertSameValue(120, $overrideConfig->cacheSearchTtlSeconds, 'Explicit search ttl override mismatch.');
 	assertSameValue(240, $overrideConfig->cacheSearchStaleSeconds, 'Explicit search stale override mismatch.');
+	assertSameValue(180, $overrideConfig->cacheSearchBaseTtlSeconds, 'Explicit searchBase ttl override mismatch.');
+	assertSameValue(360, $overrideConfig->cacheSearchBaseStaleSeconds, 'Explicit searchBase stale override mismatch.');
 	assertSameValue(20, $overrideConfig->cacheLiveAvailabilityTtlSeconds, 'Explicit live availability ttl override mismatch.');
 	assertSameValue(900, $overrideConfig->cacheSearchLockTimeoutMs, 'Explicit lockTimeoutMs override mismatch.');
 	assertSameValue(15, $overrideConfig->cacheSearchLockRetryDelayMs, 'Explicit lockRetryDelayMs override mismatch.');
@@ -171,6 +179,7 @@ try {
 			],
 			'cache' => [
 				'token' => ['ttl' => 77],
+				'search_base' => ['ttl' => 444],
 				'live_availability' => ['ttl' => 55],
 			],
 		],
@@ -186,6 +195,8 @@ try {
 	assertSameValue(['ROOT', 'SNOW'], $rootParsed->searchEngineOperators, 'fromRootConfig should read search_engine operators.');
 	assertSameValue(111, $rootParsed->cacheSearchTtlSeconds, 'fromRootConfig should read search_engine.cache.search.ttl_seconds.');
 	assertSameValue(222, $rootParsed->cacheSearchStaleSeconds, 'fromRootConfig should read search_engine.cache.search.stale_seconds.');
+	assertSameValue(444, $rootParsed->cacheSearchBaseTtlSeconds, 'fromRootConfig should map root search_base ttl.');
+	assertSameValue(222, $rootParsed->cacheSearchBaseStaleSeconds, 'fromRootConfig should default searchBase stale ttl to search stale ttl.');
 	assertSameValue(77, $rootParsed->cacheTokenTtlSeconds, 'fromRootConfig should map root token ttl.');
 	assertSameValue(55, $rootParsed->cacheLiveAvailabilityTtlSeconds, 'fromRootConfig should map root live_availability ttl.');
 	assertSameValue(['location_ski_resorts' => true, 'facility_pool' => true], $rootParsed->enforcedAccommodationAttributes(), 'Config should derive enforced accommodation attributes from search conditions.');

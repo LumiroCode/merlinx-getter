@@ -102,6 +102,47 @@ final class GetDetailsOperation implements OperationInterface
 		});
 	}
 
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function executeFresh(string $offerId): array
+	{
+		$offerId = trim($offerId);
+		if ($offerId === '') {
+			throw new InvalidInputException('OfferId is required.');
+		}
+
+		$data = $this->fetchFreshDetails($offerId);
+		$cacheKey = $this->buildCacheKey($offerId);
+		if ($cacheKey !== null) {
+			$this->writeCacheEnvelope($cacheKey, $data);
+		}
+
+		return $data;
+	}
+
+	/**
+	 * @param array<string, mixed> $detailsResponse
+	 */
+	public function put(string $offerId, array $detailsResponse): bool
+	{
+		$offerId = trim($offerId);
+		if ($offerId === '') {
+			throw new InvalidInputException('OfferId is required.');
+		}
+		if (!is_array($detailsResponse['result']['offer'] ?? null)) {
+			throw new InvalidInputException('detailsResponse must contain result.offer array.');
+		}
+
+		$cacheKey = $this->buildCacheKey($offerId);
+		if ($cacheKey === null) {
+			return false;
+		}
+
+		$this->writeCacheEnvelope($cacheKey, $detailsResponse);
+		return true;
+	}
+
 	private function buildCacheKey(string $offerId): ?string
 	{
 		$resolved = $this->cacheKeyResolver->resolve($offerId);
