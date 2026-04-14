@@ -166,8 +166,14 @@ final class SearchOperation implements OperationInterface
 	private function fetchFreshSearchData(SearchExecutionRequest $request): array
 	{
 		$queries = SearchExecutionRequestBuilder::build($this->config, $request);
+		$this->logger->debug('Built ' . count($queries) . ' search execution queries for request with fingerprint: ' . $this->buildErrorContextFingerprint($request));
+		$this->logger->debug('Queries:', array_map(fn (SearchExecutionRequest $query) => $query->toBody($this->config->defaultViewLimit), $queries));
 		$queries = $this->dedupeQueries($queries);
+		$this->logger->debug('After deduplication, ' . count($queries) . ' unique search execution queries remain for request with fingerprint: ' . $this->buildErrorContextFingerprint($request));
+		$this->logger->debug('Queries:', array_map(fn (SearchExecutionRequest $query) => $query->toBody($this->config->defaultViewLimit), $queries));
 		$executed = $this->executeQueries($queries);
+		$this->logger->debug('Executed search queries for request with fingerprint: ' . $this->buildErrorContextFingerprint($request) . '. Total views fetched: ' . count($executed['response']));
+		$this->logger->debug('executed:', $executed);
 		$data = $executed['response'];
 
 		if (!is_array($data)) {
