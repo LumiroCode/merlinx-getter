@@ -8,6 +8,11 @@ use Skionline\MerlinxGetter\Search\Util\ToObjectDeep;
 
 final class SearchExecutionRequest
 {
+	private readonly array $search;
+	private readonly array $filter;
+	private readonly array $results;
+	private readonly array $views;
+	private readonly array $options;
 	/**
 	 * @param array<string, mixed> $search
 	 * @param array<string, mixed> $filter
@@ -16,12 +21,26 @@ final class SearchExecutionRequest
 	 * @param array<string, mixed> $options
 	 */
 	private function __construct(
-		private readonly array $search,
-		private readonly array $filter,
-		private readonly array $results,
-		private readonly array $views,
-		private readonly array $options,
+		$search,
+		$filter,
+		$results,
+		$views,
+		$options,
 	) {
+		if (is_array($views)) {
+			foreach ($views as $viewKey => $view) {
+				if (is_array($view) && isset($view['fieldList']) && is_array($view['fieldList'])) {
+					$views[$viewKey]['fieldList'][] = 'Base.OfferId';
+					$views[$viewKey]['fieldList'] = array_values($views[$viewKey]['fieldList']);
+					$views[$viewKey]['fieldList'] = array_unique($views[$viewKey]['fieldList']);
+				}
+			}
+		}
+		$this->search = $search;
+		$this->filter = $filter;
+		$this->results = $results;
+		$this->views = $views;
+		$this->options = $options;
 	}
 
 	/**
