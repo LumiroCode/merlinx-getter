@@ -43,6 +43,12 @@ final class SearchExecutionRequestBuilder
 			$results = DeepMerge::merge($conditionResults, $request->results());
 			$views = DeepMerge::merge($conditionViews, $request->views());
 
+			foreach ($views as $view) {
+				if (isset($view['fieldList']) && is_array($view['fieldList'])) {
+					$view['fieldList'][] = 'Base.OfferId';
+				}
+			}
+
 			$search['Base'] = is_array($search['Base'] ?? null) ? $search['Base'] : [];
 
 			if (
