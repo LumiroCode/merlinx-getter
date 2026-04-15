@@ -18,6 +18,7 @@ try {
 		'cache' => [
 			'dir' => testCacheDir(),
 			'token' => ['ttlSeconds' => 1800],
+			'details' => ['ttlSeconds' => 86400],
 			'liveAvailability' => [
 				'ttlSeconds' => 45,
 			],
@@ -40,6 +41,7 @@ try {
 	assertSameValue(1800, $config->cacheTokenTtlSeconds, 'cache.token.ttlSeconds mapping mismatch.');
 	assertSameValue(300, $config->cacheSearchTtlSeconds, 'Default search ttl mismatch.');
 	assertSameValue(900, $config->cacheSearchStaleSeconds, 'Default search stale ttl mismatch.');
+	assertSameValue(86400, $config->cacheDetailsTtlSeconds, 'cache.details.ttlSeconds mapping mismatch.');
 	assertSameValue(300, $config->cacheSearchBaseTtlSeconds, 'Default searchBase ttl mismatch.');
 	assertSameValue(900, $config->cacheSearchBaseStaleSeconds, 'Default searchBase stale ttl mismatch.');
 	assertSameValue(45, $config->cacheLiveAvailabilityTtlSeconds, 'cache.liveAvailability.ttlSeconds mapping mismatch.');
@@ -94,6 +96,7 @@ try {
 		'cache' => [
 			'dir' => testCacheDir(),
 			'token' => ['ttlSeconds' => 1200],
+			'details' => ['ttlSeconds' => 12345],
 			'liveAvailability' => [
 				'ttlSeconds' => 20,
 			],
@@ -115,6 +118,7 @@ try {
 	assertSameValue(1200, $overrideConfig->cacheTokenTtlSeconds, 'Explicit token ttl override mismatch.');
 	assertSameValue(120, $overrideConfig->cacheSearchTtlSeconds, 'Explicit search ttl override mismatch.');
 	assertSameValue(240, $overrideConfig->cacheSearchStaleSeconds, 'Explicit search stale override mismatch.');
+	assertSameValue(12345, $overrideConfig->cacheDetailsTtlSeconds, 'Explicit details ttl override mismatch.');
 	assertSameValue(180, $overrideConfig->cacheSearchBaseTtlSeconds, 'Explicit searchBase ttl override mismatch.');
 	assertSameValue(360, $overrideConfig->cacheSearchBaseStaleSeconds, 'Explicit searchBase stale override mismatch.');
 	assertSameValue(20, $overrideConfig->cacheLiveAvailabilityTtlSeconds, 'Explicit live availability ttl override mismatch.');
@@ -133,6 +137,7 @@ try {
 		],
 	]));
 	assertSameValue(30, $defaultLiveAvailabilityTtlConfig->cacheLiveAvailabilityTtlSeconds, 'Default live availability ttl mismatch.');
+	assertSameValue(86400, $defaultLiveAvailabilityTtlConfig->cacheDetailsTtlSeconds, 'Default details ttl mismatch.');
 
 	$rootConfig = [
 		'merlinx' => [
@@ -179,6 +184,7 @@ try {
 			],
 			'cache' => [
 				'token' => ['ttl' => 77],
+				'details' => ['ttl' => 86401],
 				'search_base' => ['ttl' => 444],
 				'live_availability' => ['ttl' => 55],
 			],
@@ -198,6 +204,7 @@ try {
 	assertSameValue(444, $rootParsed->cacheSearchBaseTtlSeconds, 'fromRootConfig should map root search_base ttl.');
 	assertSameValue(222, $rootParsed->cacheSearchBaseStaleSeconds, 'fromRootConfig should default searchBase stale ttl to search stale ttl.');
 	assertSameValue(77, $rootParsed->cacheTokenTtlSeconds, 'fromRootConfig should map root token ttl.');
+	assertSameValue(86401, $rootParsed->cacheDetailsTtlSeconds, 'fromRootConfig should map root details ttl.');
 	assertSameValue(55, $rootParsed->cacheLiveAvailabilityTtlSeconds, 'fromRootConfig should map root live_availability ttl.');
 	assertSameValue(['location_ski_resorts' => true, 'facility_pool' => true], $rootParsed->enforcedAccommodationAttributes(), 'Config should derive enforced accommodation attributes from search conditions.');
 

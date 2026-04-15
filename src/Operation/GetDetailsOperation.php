@@ -248,9 +248,9 @@ final class GetDetailsOperation implements OperationInterface
 	private function writeCacheEnvelope(string $cacheKey, array $data): void
 	{
 		$now = time();
-		$freshUntil = $now + $this->config->cacheSearchTtlSeconds;
-		$staleUntil = $freshUntil + $this->config->cacheSearchStaleSeconds;
-		$ttl = max(1, $this->config->cacheSearchTtlSeconds + $this->config->cacheSearchStaleSeconds);
+		$ttl = max(1, $this->config->cacheDetailsTtlSeconds);
+		$freshUntil = $now + $ttl;
+		$staleUntil = $freshUntil;
 
 		try {
 			$this->cache->set($cacheKey, [

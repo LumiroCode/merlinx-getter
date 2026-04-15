@@ -350,6 +350,7 @@ Defaults when omitted:
 - `search_engine.cache.search_base.stale_seconds`: same as `search_engine.cache.search.stale_seconds`
 - `search_engine.cache.search.lock_timeout_ms`: `3000`
 - `search_engine.cache.search.lock_retry_delay_ms`: `50`
+- `merlinx.cache.details.ttl`: `86400`
 - `merlinx.cache.live_availability.ttl`: `30`
 
 ## Search Request Contract

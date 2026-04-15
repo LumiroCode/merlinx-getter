@@ -13,6 +13,7 @@ final class MerlinxGetterConfig
 	private const DEFAULT_CACHE_TOKEN_TTL_SECONDS = 30;
 	private const DEFAULT_CACHE_SEARCH_TTL_SECONDS = 300;
 	private const DEFAULT_CACHE_SEARCH_STALE_SECONDS = 900;
+	private const DEFAULT_CACHE_DETAILS_TTL_SECONDS = 86400;
 	private const DEFAULT_CACHE_LIVE_AVAILABILITY_TTL_SECONDS = 30;
 	private const DEFAULT_SEARCH_LOCK_TIMEOUT_MS = 3000;
 	private const DEFAULT_SEARCH_LOCK_RETRY_DELAY_MS = 50;
@@ -45,6 +46,7 @@ final class MerlinxGetterConfig
 		public readonly int $cacheTokenTtlSeconds,
 		public readonly int $cacheSearchTtlSeconds,
 		public readonly int $cacheSearchStaleSeconds,
+		public readonly int $cacheDetailsTtlSeconds,
 		public readonly int $cacheSearchBaseTtlSeconds,
 		public readonly int $cacheSearchBaseStaleSeconds,
 		public readonly int $cacheLiveAvailabilityTtlSeconds,
@@ -112,6 +114,7 @@ final class MerlinxGetterConfig
 			cacheTokenTtlSeconds: self::optionalNestedPositiveInt($cache, ['token', 'ttlSeconds'], self::DEFAULT_CACHE_TOKEN_TTL_SECONDS),
 			cacheSearchTtlSeconds: $searchTtlSeconds,
 			cacheSearchStaleSeconds: $searchStaleSeconds,
+			cacheDetailsTtlSeconds: self::optionalNestedPositiveInt($cache, ['details', 'ttlSeconds'], self::DEFAULT_CACHE_DETAILS_TTL_SECONDS),
 			cacheSearchBaseTtlSeconds: self::optionalNestedPositiveInt($searchBaseCache, ['ttl_seconds'], $searchTtlSeconds),
 			cacheSearchBaseStaleSeconds: self::optionalNestedPositiveInt($searchBaseCache, ['stale_seconds'], $searchStaleSeconds),
 			cacheLiveAvailabilityTtlSeconds: self::optionalNestedPositiveInt($cache, ['liveAvailability', 'ttlSeconds'], self::DEFAULT_CACHE_LIVE_AVAILABILITY_TTL_SECONDS),
@@ -148,6 +151,7 @@ final class MerlinxGetterConfig
 		$systemCache = is_array($system['cache'] ?? null) ? $system['cache'] : [];
 		$cache = is_array($merlinx['cache'] ?? null) ? $merlinx['cache'] : [];
 		$tokenCache = is_array($cache['token'] ?? null) ? $cache['token'] : [];
+		$detailsCache = is_array($cache['details'] ?? null) ? $cache['details'] : [];
 		$searchBaseCache = is_array($cache['search_base'] ?? null) ? $cache['search_base'] : [];
 		$liveAvailabilityCache = is_array($cache['live_availability'] ?? null) ? $cache['live_availability'] : [];
 		$searchEngineCache = is_array($searchEngine['cache'] ?? null) ? $searchEngine['cache'] : [];
@@ -168,6 +172,9 @@ final class MerlinxGetterConfig
 					'dir' => $systemCache['dir'] ?? null,
 					'token' => [
 						'ttlSeconds' => $tokenCache['ttl'] ?? null,
+					],
+					'details' => [
+						'ttlSeconds' => $detailsCache['ttl'] ?? null,
 					],
 					'liveAvailability' => [
 						'ttlSeconds' => $liveAvailabilityCache['ttl'] ?? null,
