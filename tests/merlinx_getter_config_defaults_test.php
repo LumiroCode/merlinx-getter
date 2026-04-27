@@ -39,7 +39,7 @@ try {
 	assertSameValue([], $config->childAsAdultOperators(), 'Default child-as-adult operators mismatch.');
 	assertSameValue([], $config->excludedValuesByPath(), 'Default excluded values-by-path map mismatch.');
 	assertSameValue(1800, $config->cacheTokenTtlSeconds, 'cache.token.ttlSeconds mapping mismatch.');
-	assertSameValue(300, $config->cacheSearchTtlSeconds, 'Default search ttl mismatch.');
+	assertSameValue(1800, $config->cacheSearchTtlSeconds, 'Default search ttl mismatch.');
 	assertSameValue(900, $config->cacheSearchStaleSeconds, 'Default search stale ttl mismatch.');
 	assertSameValue(86400, $config->cacheDetailsTtlSeconds, 'cache.details.ttlSeconds mapping mismatch.');
 	assertSameValue(300, $config->cacheSearchBaseTtlSeconds, 'Default searchBase ttl mismatch.');

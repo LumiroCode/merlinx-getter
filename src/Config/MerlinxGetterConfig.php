@@ -11,7 +11,7 @@ final class MerlinxGetterConfig
 {
 	private const DEFAULT_API_BASE_URL = 'https://mwsv5pro.merlinx.eu';
 	private const DEFAULT_CACHE_TOKEN_TTL_SECONDS = 30;
-	private const DEFAULT_CACHE_SEARCH_TTL_SECONDS = 300;
+	private const DEFAULT_CACHE_SEARCH_TTL_SECONDS = 1800;
 	private const DEFAULT_CACHE_SEARCH_STALE_SECONDS = 900;
 	private const DEFAULT_CACHE_DETAILS_TTL_SECONDS = 86400;
 	private const DEFAULT_CACHE_LIVE_AVAILABILITY_TTL_SECONDS = 30;
