@@ -138,6 +138,71 @@ try {
 		'Disjoint date lists should make the branch unsatisfiable.'
 	);
 
+	$dateRangeConfig = builderConfig(
+		[
+			'Base' => [
+				'StartDate' => ['Min' => '2026-05-01', 'Max' => '2026-10-31'],
+			],
+		],
+		operators: ['SNOW'],
+	);
+	$dateRangeOverlapQuery = firstBuiltQuery(
+		$dateRangeConfig,
+		searchRequest([
+			'Base' => [
+				'StartDate' => ['Min' => '2026-04-20', 'Max' => '2026-05-20'],
+			],
+		]),
+		'Overlapping date ranges should still execute inside configured scope.'
+	);
+	assertSameValue(
+		['Min' => '2026-05-01', 'Max' => '2026-05-20'],
+		$dateRangeOverlapQuery->search()['Base']['StartDate'] ?? null,
+		'Overlapping date ranges should narrow to their Min/Max intersection.'
+	);
+	assertNoBuiltQueries(
+		$dateRangeConfig,
+		searchRequest([
+			'Base' => [
+				'StartDate' => ['Min' => '2026-11-01', 'Max' => '2026-11-15'],
+			],
+		]),
+		'Disjoint date ranges should make the branch unsatisfiable.'
+	);
+	$dateRangeScalarQuery = firstBuiltQuery(
+		$dateRangeConfig,
+		searchRequest([
+			'Base' => [
+				'StartDate' => '2026-07-15',
+			],
+		]),
+		'Scalar date inside a configured range should still execute inside configured scope.'
+	);
+	assertSameValue('2026-07-15', $dateRangeScalarQuery->search()['Base']['StartDate'] ?? null, 'Scalar date inside configured range should be preserved.');
+
+	$rangeLikeMapConfig = builderConfig(
+		[
+			'Base' => [
+				'SyntheticRange' => ['Min' => 'A', 'Max' => 'Z', 'Mode' => 'inclusive'],
+			],
+		],
+		operators: ['SNOW'],
+	);
+	$rangeLikeMapQuery = firstBuiltQuery(
+		$rangeLikeMapConfig,
+		searchRequest([
+			'Base' => [
+				'SyntheticRange' => ['Min' => 'A', 'Max' => 'Z', 'Mode' => 'inclusive'],
+			],
+		]),
+		'Min/Max-like maps with extra keys should keep existing recursive map behavior.'
+	);
+	assertSameValue(
+		['Min' => 'A', 'Max' => 'Z', 'Mode' => 'inclusive'],
+		$rangeLikeMapQuery->search()['Base']['SyntheticRange'] ?? null,
+		'Min/Max-like map with extra keys should preserve all fields.'
+	);
+
 	$cityConfig = builderConfig(
 		[
 			'Base' => [

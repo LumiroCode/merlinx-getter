@@ -96,6 +96,12 @@ final class ScopedConditionResolver
 	 */
 	private static function combineValues(array $path, mixed $scopeValue, mixed $requestValue): array
 	{
+		$scopeRange = is_array($scopeValue) ? self::normalizeRange($scopeValue) : null;
+		$requestRange = is_array($requestValue) ? self::normalizeRange($requestValue) : null;
+		if ($scopeRange !== null || $requestRange !== null) {
+			return self::combineRangeValues($scopeRange, $scopeValue, $requestRange, $requestValue);
+		}
+
 		if (is_array($scopeValue) && is_array($requestValue)) {
 			$scopeIsList = array_is_list($scopeValue);
 			$requestIsList = array_is_list($requestValue);
@@ -132,6 +138,149 @@ final class ScopedConditionResolver
 		return self::normalizeComparableValue($scopeValue) === self::normalizeComparableValue($requestValue)
 			? [true, $scopeValue]
 			: [false, null];
+	}
+
+	/**
+	 * @param array{Min?: mixed, Max?: mixed}|null $scopeRange
+	 * @param array{Min?: mixed, Max?: mixed}|null $requestRange
+	 * @return array{0: bool, 1: mixed}
+	 */
+	private static function combineRangeValues(?array $scopeRange, mixed $scopeValue, ?array $requestRange, mixed $requestValue): array
+	{
+		if ($scopeRange !== null && $requestRange !== null) {
+			return self::combineRanges($scopeRange, $requestRange);
+		}
+
+		if ($scopeRange !== null) {
+			return self::combineRangeWithScalar($scopeRange, $requestValue);
+		}
+
+		if ($requestRange !== null) {
+			return self::combineRangeWithScalar($requestRange, $scopeValue);
+		}
+
+		return [false, null];
+	}
+
+	/**
+	 * @param array{Min?: mixed, Max?: mixed} $scopeRange
+	 * @param array{Min?: mixed, Max?: mixed} $requestRange
+	 * @return array{0: bool, 1: mixed}
+	 */
+	private static function combineRanges(array $scopeRange, array $requestRange): array
+	{
+		$min = null;
+		$max = null;
+
+		if (array_key_exists('Min', $scopeRange)) {
+			$min = $scopeRange['Min'];
+		}
+		if (array_key_exists('Min', $requestRange) && ($min === null || self::compareRangeScalars($requestRange['Min'], $min) > 0)) {
+			$min = $requestRange['Min'];
+		}
+
+		if (array_key_exists('Max', $scopeRange)) {
+			$max = $scopeRange['Max'];
+		}
+		if (array_key_exists('Max', $requestRange) && ($max === null || self::compareRangeScalars($requestRange['Max'], $max) < 0)) {
+			$max = $requestRange['Max'];
+		}
+
+		if ($min !== null && $max !== null && self::compareRangeScalars($min, $max) > 0) {
+			return [false, null];
+		}
+
+		$resolved = [];
+		if ($min !== null) {
+			$resolved['Min'] = $min;
+		}
+		if ($max !== null) {
+			$resolved['Max'] = $max;
+		}
+
+		return $resolved === [] ? [false, null] : [true, $resolved];
+	}
+
+	/**
+	 * @param array{Min?: mixed, Max?: mixed} $range
+	 * @return array{0: bool, 1: mixed}
+	 */
+	private static function combineRangeWithScalar(array $range, mixed $value): array
+	{
+		if (!self::isRangeScalar($value)) {
+			return [false, null];
+		}
+
+		if (array_key_exists('Min', $range) && self::compareRangeScalars($value, $range['Min']) < 0) {
+			return [false, null];
+		}
+
+		if (array_key_exists('Max', $range) && self::compareRangeScalars($value, $range['Max']) > 0) {
+			return [false, null];
+		}
+
+		return [true, $value];
+	}
+
+	/**
+	 * @param array<string|int, mixed> $value
+	 * @return array{Min?: mixed, Max?: mixed}|null
+	 */
+	private static function normalizeRange(array $value): ?array
+	{
+		if (array_is_list($value)) {
+			return null;
+		}
+
+		foreach (array_keys($value) as $key) {
+			if ($key !== 'Min' && $key !== 'Max') {
+				return null;
+			}
+		}
+
+		$hasMin = array_key_exists('Min', $value);
+		$hasMax = array_key_exists('Max', $value);
+		if (!$hasMin && !$hasMax) {
+			return null;
+		}
+
+		$range = [];
+		if ($hasMin) {
+			if (!self::isRangeScalar($value['Min'])) {
+				return null;
+			}
+			$range['Min'] = $value['Min'];
+		}
+		if ($hasMax) {
+			if (!self::isRangeScalar($value['Max'])) {
+				return null;
+			}
+			$range['Max'] = $value['Max'];
+		}
+
+		if (
+			array_key_exists('Min', $range)
+			&& array_key_exists('Max', $range)
+			&& self::compareRangeScalars($range['Min'], $range['Max']) > 0
+		) {
+			return null;
+		}
+
+		return $range;
+	}
+
+	private static function isRangeScalar(mixed $value): bool
+	{
+		return is_string($value) || is_int($value) || is_float($value);
+	}
+
+	private static function compareRangeScalars(mixed $left, mixed $right): int
+	{
+		if (is_numeric($left) && is_numeric($right)) {
+			return (float) $left <=> (float) $right;
+		}
+
+		return strcmp((string) $left, (string) $right);
 	}
 
 	/**

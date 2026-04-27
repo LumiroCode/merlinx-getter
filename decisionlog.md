@@ -10,3 +10,4 @@
 - Engine-owned response exclusions (`search_engine.response_filters.exclude_values_by_path`) are applied pre-merge and must not be reintroduced as MerlinX query variants.
 - No prefetched dataset corpus is maintained; all follow-through is driven by cache or, if expired, real-time response content and app-level limits.
 - Attribute handling favors API request budget over exact logical satisfaction.
+- Pure `Min`/`Max` scoped-condition ranges are intersected with request input; empty intersections discard the condition branch.
