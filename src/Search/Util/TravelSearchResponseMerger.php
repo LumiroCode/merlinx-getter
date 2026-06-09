@@ -61,6 +61,30 @@ final class TravelSearchResponseMerger
 		return $merged;
 	}
 
+	private function selectCheaperOffer(array $offerA, array $offerB): array
+	{
+		if (!isset($offerA['offer']) && isset($offerB['offer'])) {
+			return $offerB;
+		}
+		if (isset($offerA['offer']) && !isset($offerB['offer'])) {
+			return $offerA;
+		}
+		if (!isset($offerA['offer']) && !isset($offerB['offer'])) {
+			return $offerA;
+		}
+		$priceA = floatval($offerA['offer']['Base']['Price']['Total']['Amount'] ?? null);
+		$priceB = floatval($offerB['offer']['Base']['Price']['Total']['Amount'] ?? null);
+
+		if ($priceA > 0 && $priceB > 0) {
+			return $priceA <= $priceB ? $offerA : $offerB;
+		}
+		if ($priceA <= 0 && $priceB > 0) {
+			return $offerB;
+		}
+
+		return $offerA;
+	}
+
 	/**
 	 * @param array<string, mixed> $base
 	 * @param array<string, mixed> $incoming
@@ -75,7 +99,7 @@ final class TravelSearchResponseMerger
 				continue;
 			}
 
-			$items[$offerId] = $this->mergeEntityPreferFirst($items[$offerId], $item);
+			$items[$offerId] = $this->selectCheaperOffer($items[$offerId], $item);
 		}
 
 		return $this->mergeViewEnvelope($base, $incoming, $items);
@@ -95,7 +119,7 @@ final class TravelSearchResponseMerger
 				continue;
 			}
 
-			$items[$groupKey] = $this->mergeEntityPreferFirst($items[$groupKey], $item);
+			$items[$groupKey] = $this->selectCheaperOffer($items[$groupKey], $item);
 			$items[$groupKey]['groupKeyValue'] = (string) $groupKey;
 		}
 

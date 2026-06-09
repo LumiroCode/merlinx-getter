@@ -22,7 +22,7 @@ try {
 						'offer' => [
 							'Base' => [
 								'OfferId' => 'offer-1|SNOW|NHx8',
-								'Price' => ['Total' => ['amount' => '100.00']],
+								'Price' => ['Total' => ['Amount' => '120.00']],
 							],
 							'Accommodation' => [],
 						],
@@ -37,8 +37,27 @@ try {
 		],
 		[
 			'offerList' => [
-				'more' => false,
+				'more' => true,
 				'pageBookmark' => 'bm-b',
+				'items' => [
+					'upstream-key-1' => [
+						'offer' => [
+							'Base' => [
+								'OfferId' => 'offer-1|SNOW|NHx8',
+								'Price' => ['Total' => ['Amount' => '100.00']],
+							],
+							'Accommodation' => [
+								'Name' => 'Cheapest Variant',
+							],
+						],
+					],
+				],
+			],
+		],
+		[
+			'offerList' => [
+				'more' => false,
+				'pageBookmark' => 'bm-c',
 				'items' => [
 					'upstream-key-dup' => [
 						'offer' => [
@@ -93,13 +112,13 @@ try {
 
 	$result = $operation->execute(searchRequest([], [], [], ['offerList' => ['limit' => 500]]))->response();
 
-	assertSameValue(2, $searchRequests, 'Expected two /search requests (single deduped query with two pages).');
+	assertSameValue(3, $searchRequests, 'Expected three /search requests (single deduped query with three pages).');
 
 	$items = $result['offerList']['items'] ?? null;
 	assertTrue(is_array($items), 'Merged offerList.items is missing or invalid.');
 	assertSameValue(2, count($items), 'Merged offerList.items should include both unique OfferIds.');
 	assertTrue(!($result['offerList']['more'] ?? true), 'Merged offerList.more should be false as per last response.');
-	assertSameValue('bm-b', $result['offerList']['pageBookmark'] ?? null, 'Merged offerList.pageBookmark should match last response.');
+	assertSameValue('bm-c', $result['offerList']['pageBookmark'] ?? null, 'Merged offerList.pageBookmark should match last response.');
 	assertSameValue(
 		['offer-1|SNOW|NHx8', 'offer-2|SNOW|NHx8'],
 		array_keys($items),
@@ -107,13 +126,13 @@ try {
 	);
 	assertSameValue(
 		'100.00',
-		$items['offer-1|SNOW|NHx8']['offer']['Base']['Price']['Total']['amount'] ?? null,
-		'First occurrence should keep existing populated fields.'
+		$items['offer-1|SNOW|NHx8']['offer']['Base']['Price']['Total']['Amount'] ?? null,
+		'Cheapest occurrence should force its fields.'
 	);
 	assertSameValue(
-		'Filled From Duplicate',
+		'Cheapest Variant',
 		$items['offer-1|SNOW|NHx8']['offer']['Accommodation']['Name'] ?? null,
-		'Duplicate OfferId should fill gaps from later payloads.'
+		'Cheapest occurrence should force its fields.'
 	);
 
 	echo "PASS: SearchOperation keys offerList.items by OfferId, drops malformed entries, and fills duplicate gaps.\n";
